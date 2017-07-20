@@ -1,0 +1,6 @@
+{
+	"name": "web-config",
+	"dependencies": {
+		"vibe-d": "*"
+	}
+}
