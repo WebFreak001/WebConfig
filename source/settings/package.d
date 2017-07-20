@@ -5,6 +5,7 @@ module settings;
 import vibe.http.server;
 import vibe.inet.webform;
 import vibe.inet.url;
+import vibe.web.web;
 
 import std.algorithm;
 import std.ascii;
@@ -79,6 +80,11 @@ unittest
 		@colorSetting string favoriteColor;
 		@disabledSetting string someInformation = "Just a hint, nothing changable";
 		Country favoriteCountry;
+		@settingTranslation("de", "Lieblingsessen")  // Translation of labels (only in translation contexts inside web interfaces)
+		@settingTranslation("ja", "好きな食べ物")  // translations require at least vibe.d 0.8.1-alpha.3 to work
+		@enumTranslation(null, ["Fish", "Meat", "Vegetables", "Fruits"])
+		@enumTranslation("de", ["Fisch", "Fleisch", "Gemüse", "Obst"])
+		@enumTranslation("ja", ["魚", "肉", "野菜", "フルーツ"])
 		@optionsSetting FavoriteFood favoriteFood;
 		BitFlags!SocialMedia usedSocialMedia;
 		@settingTitle("If you don't have any you can still say 1 because you have yourself.")  // Hover & validation text
@@ -98,6 +104,7 @@ unittest
 	enum html = `<html>
 		<head>
 			<title>Settings</title>
+			<meta charset="utf-8"/>
 			<link rel="stylesheet" href="/style.css"/>
 			<style>
 				body,html{background:#efefef;color:rgba(0,0,0,0.87);font-family:Roboto,"Segoe UI",sans-serif;}
@@ -112,31 +119,50 @@ unittest
 		</body>
 	</html>`;
 
+	struct TranslationContext
+	{
+		import std.meta;
+
+		alias languages = AliasSeq!("en", "de", "ja");
+	}
+
 	Config settingsInstance; // You might fetch & save this per user, web-config only changes the struct
-	router.get("/settings", delegate(scope req, scope res) @safe{
-		string settings = renderSettings(settingsInstance);
-		res.writeBody(html.format(settings), "text/html");
-	});
-	router.post("/settings", delegate(scope req, scope res) @safe{
-		// no-js & nonautomatic setting route
-		auto ret = req.processSettings(settingsInstance);
-		string settings = renderSettings(settingsInstance, ret);
-		if (ret)
+
+	@translationContext!TranslationContext class SettingsInterface
+	{
+		@safe void getSettings(scope HTTPServerRequest req, scope HTTPServerResponse res)
 		{
-			// Something changed, you can save here
+			string settings = renderSettings(settingsInstance);
+			res.writeBody(html.format(settings), "text/html");
 		}
-		res.writeBody(html.format(settings), "text/html");
-	});
-	router.post("/api/setting", delegate(scope req, scope res) @safe{
-		// js route called for each individual setting
-		if (req.processSettings(settingsInstance))
+
+		@safe void postSettings(scope HTTPServerRequest req, scope HTTPServerResponse res)
 		{
-			// Save settings
-			res.writeBody("", 204); // Send 200 or 204
+			// no-js & nonautomatic setting route
+			auto ret = req.processSettings(settingsInstance);
+			string settings = renderSettings(settingsInstance, ret);
+			if (ret)
+			{
+				// Something changed, you can save here
+			}
+			res.writeBody(html.format(settings), "text/html");
 		}
-		else
-			res.writeBody("", HTTPStatus.badRequest);
-	});
+
+		@path("/api/settings") @safe void postJsSettings(scope HTTPServerRequest req,
+				scope HTTPServerResponse res)
+		{
+			// js route called for each individual setting
+			if (req.processSettings(settingsInstance))
+			{
+				// Save settings
+				res.writeBody("", 204); // Send 200 or 204
+			}
+			else
+				res.writeBody("", HTTPStatus.badRequest);
+		}
+	}
+
+	router.registerWebInterface(new SettingsInterface);
 	listenHTTP(new HTTPServerSettings, router);
 	runApplication();
 }
@@ -202,10 +228,20 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	enum patterns = getUDAs!(Member[0], settingPattern);
 	enum titles = getUDAs!(Member[0], settingTitle);
 	enum labels = getUDAs!(Member[0], settingLabel);
+	enum translations = getUDAs!(Member[0], settingTranslation);
+	enum enumTranslations = getUDAs!(Member[0], enumTranslation);
 	static if (labels.length)
 		string uiName = labels[0].label;
 	else
 		string uiName = name.makeHumanName;
+	static if (translations.length && is(typeof(language) == string))
+	{
+		auto lang = (() @trusted => language)();
+		if (lang !is null)
+			foreach (translation; translations)
+				if (translation.language == lang)
+					uiName = translation.label;
+	}
 	string raw = ` name="` ~ name ~ `"`;
 	static if (isDisabled)
 		raw ~= " disabled";
@@ -237,12 +273,12 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	static if (is(T == enum))
 	{
 		static if (isOptions)
-			return InputGenerator.optionList!T(uiName, value, raw, success);
+			return InputGenerator.optionList!(T, enumTranslations)(uiName, value, raw, success);
 		else
-			return InputGenerator.dropdownList!T(uiName, value, raw, success);
+			return InputGenerator.dropdownList!(T, enumTranslations)(uiName, value, raw, success);
 	}
 	else static if (is(T == BitFlags!Enum, Enum))
-		return InputGenerator.checkboxList!Enum(uiName, value, raw, success);
+		return InputGenerator.checkboxList!(Enum, enumTranslations)(uiName, value, raw, success);
 	else static if (is(T == bool))
 		return InputGenerator.checkbox(uiName, value, raw, success);
 	else static if (isSomeString!T)
@@ -828,7 +864,8 @@ struct DefaultInputGenerator
 	}
 
 	/// Called for enums disabled as select (you need to iterate over the enum members)
-	static string dropdownList(Enum)(string name, Enum value, string raw, bool success)
+	static string dropdownList(Enum, translations...)(string name, Enum value,
+			string raw, bool success)
 	{
 		const className = success ? "" : " error";
 		string ret = `<label class="select` ~ className ~ `"><span>`
@@ -836,18 +873,21 @@ struct DefaultInputGenerator
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= `<option value="` ~ (cast(OriginalType!Enum) __traits(getMember,
 					Enum, member)).to!string.encode ~ `"` ~ (value == __traits(getMember,
-					Enum, member) ? " selected" : "") ~ `>` ~ member.makeHumanName ~ `</option>`;
+					Enum, member) ? " selected" : "") ~ `>` ~ __traits(getMember, Enum, member)
+				.translateEnum!(Enum, translations)(member.makeHumanName) ~ `</option>`;
 		return ret ~ "</select></label>" ~ errorString(success);
 	}
 
 	/// Called for enums displayed as list of radio boxes (you need to iterate over the enum members)
-	static string optionList(Enum)(string name, Enum value, string raw, bool success)
+	static string optionList(Enum, translations...)(string name, Enum value,
+			string raw, bool success)
 	{
 		const className = success ? "" : " error";
 		string ret = `<label class="checkbox options` ~ className ~ `"><span>`
 			~ name.encode ~ "</span>";
 		foreach (member; __traits(allMembers, Enum))
-			ret ~= checkbox(member.makeHumanName, value == __traits(getMember, Enum, member),
+			ret ~= checkbox(__traits(getMember, Enum, member).translateEnum!(Enum,
+					translations)(member.makeHumanName), value == __traits(getMember, Enum, member),
 					raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
 						Enum, member)).to!string.encode ~ `"`, true).replace(
 					`type="checkbox"`, `type="radio"`);
@@ -855,15 +895,17 @@ struct DefaultInputGenerator
 	}
 
 	/// Called for BitFlags displayed as list of checkboxes.
-	static string checkboxList(Enum)(string name, BitFlags!Enum value, string raw, bool success)
+	static string checkboxList(Enum, translations...)(string name,
+			BitFlags!Enum value, string raw, bool success)
 	{
 		const className = success ? "" : " error";
 		string ret = `<label class="checkbox flags` ~ className ~ `"><span>`
 			~ name.encode ~ "</span>";
 		foreach (member; __traits(allMembers, Enum))
-			ret ~= checkbox(member.makeHumanName, !!(value & __traits(getMember,
-					Enum, member)), raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
-					Enum, member)).to!string.encode ~ `"`, true);
+			ret ~= checkbox(__traits(getMember, Enum, member).translateEnum!(Enum,
+					translations)(member.makeHumanName), !!(value & __traits(getMember, Enum, member)),
+					raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
+						Enum, member)).to!string.encode ~ `"`, true);
 		return ret ~ `</label>` ~ errorString(success);
 	}
 }
@@ -951,6 +993,57 @@ struct settingLabel
 {
 	///
 	string label;
+}
+
+/// Changes the label if the current language (using a WebInterface translation context) matches the given one.
+/// You need at least vibe-d v0.8.1-alpha.3 to use this UDA.
+struct settingTranslation
+{
+	///
+	string language;
+	///
+	string label;
+}
+
+/// Relables all enum member names for a language. Give `null` as first argument to change the default language
+struct enumTranslation
+{
+	///
+	string language;
+	///
+	string[] translations;
+}
+
+string translateEnum(T, translations...)(T value, string fallback) @safe 
+		if (is(T == enum))
+{
+	static if (translations.length)
+	{
+		static if (is(typeof(language) == string))
+			auto lang = (() @trusted => language)();
+		enum NumEnumMembers = [EnumMembers!T].length;
+		foreach (i, other; EnumMembers!T)
+		{
+			if (other == value)
+			{
+				string ret = null;
+				foreach (translation; translations)
+				{
+					static assert(translation.translations.length == NumEnumMembers,
+							"Translation missing some values. Set them to null to skip");
+					if (translation.language is null && ret is null)
+						ret = translation.translations[i];
+					else static if (is(typeof(language) == string))
+					{
+						if (translation.language == lang)
+							ret = translation.translations[i];
+					}
+				}
+				return ret is null ? fallback : ret;
+			}
+		}
+	}
+	return fallback;
 }
 
 /// Contains a updateSetting(input) function which automatically sends changes to the server.
