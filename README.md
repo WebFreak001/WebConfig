@@ -1,7 +1,7 @@
 # web-config
 
-<a href="https://code.dlang.org/packages/web-config" title="Go to web-config"><img src="https://img.shields.io/dub/v/web-config.svg" alt="Dub version"></a>
-<a href="https://code.dlang.org/packages/web-config" title="Go to web-config"><img src="https://img.shields.io/dub/dt/web-config.svg" alt="Dub downloads"></a>
+[![Dub version](https://img.shields.io/dub/v/web-config.svg)](https://code.dlang.org/packages/web-config)
+[![Dub downloads](https://img.shields.io/dub/dt/web-config.svg)](https://code.dlang.org/packages/web-config)
 
 A HTML settings/properties generator using D's Compile Time magic.
 
