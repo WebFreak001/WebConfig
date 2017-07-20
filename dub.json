@@ -1,5 +1,8 @@
 {
 	"name": "web-config",
+	"description": "HTML settings page generator & server side validator from any struct",
+	"homepage": "https://webfreak001.github.io/WebConfig/package.html",
+	"license": "MIT",
 	"dependencies": {
 		"vibe-d": "*"
 	}

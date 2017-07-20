@@ -136,3 +136,5 @@ router.post("/api/setting", delegate(scope req, scope res) @safe{
 (See unittest in [source/settings/package.d](source/settings/package.d) for HTML of this example)
 
 ![Demo Config](demo.png)
+
+[Documentation](https://webfreak001.github.io/WebConfig/package.html)
