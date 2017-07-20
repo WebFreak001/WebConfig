@@ -1,5 +1,8 @@
 # web-config
 
+<a href="https://code.dlang.org/packages/web-config" title="Go to web-config"><img src="https://img.shields.io/dub/v/web-config.svg" alt="Dub version"></a>
+<a href="https://code.dlang.org/packages/web-config" title="Go to web-config"><img src="https://img.shields.io/dub/dt/web-config.svg" alt="Dub downloads"></a>
+
 A HTML settings/properties generator using D's Compile Time magic.
 
 By default there is **no CSS**. Inputs will be ugly because the default generator does not emit any line breaks. You could make a custom generator and call the `DefaultInputGenerator` methods and add a line break but the recommended way is by making the `<label>` elements simply `display: block`.
