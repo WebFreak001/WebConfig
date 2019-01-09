@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>settings</title>
+    <title>webconfig</title>
     <style type="text/css" media="screen">
       html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p,
       blockquote, pre, a, abbr, address, cite, code, del, dfn, em, figure,
@@ -463,7 +463,7 @@
   <body id="ddoc_main" class="ddoc dlang">
     <div class="content_wrapper">
       <article class="module">
-        <h1 class="module_name">settings</h1>
+        <h1 class="module_name">webconfig</h1>
         <section id="module_content"><section class="section ddoc_sections">
   <div class="ddoc_summary">
   <p class="para">
@@ -474,7 +474,7 @@
 <div class="ddoc_see_also">
   <h4>See Also</h4>
   <p class="para">
-    <a href="aliases.html"><code class="code"><code class="code">settings</code>.aliases</code></a> for shorter UDAs
+    <a href="aliases.html"><code class="code">settings.aliases</code></a> for shorter UDAs
   </p>
 </div>
 <div class="ddoc_examples">
@@ -487,11 +487,18 @@
       <ol class="code_lines">
         <li><code class="code"><span class="keyword">enum</span> FavoriteFood
 {
+	<span class="comment">// enum UDAs require at least dmd 2.082.0
+</span>	<span class="comment">//dfmt off
+</span>	@settingTranslation(<span class="keyword">null</span>, <span class="string_literal">"Fish"</span>) @settingTranslation(<span class="string_literal">"de"</span>, <span class="string_literal">"Fisch"</span>) @settingTranslation(<span class="string_literal">"ja"</span>, <span class="string_literal">"魚"</span>)
 	fish,
+	@settingTranslation(<span class="keyword">null</span>, <span class="string_literal">"Meat"</span>) @settingTranslation(<span class="string_literal">"de"</span>, <span class="string_literal">"Fleisch"</span>) @settingTranslation(<span class="string_literal">"ja"</span>, <span class="string_literal">"肉"</span>)
 	meat,
+	@settingTranslation(<span class="keyword">null</span>, <span class="string_literal">"Vegetables"</span>) @settingTranslation(<span class="string_literal">"de"</span>, <span class="string_literal">"Gemüse"</span>) @settingTranslation(<span class="string_literal">"ja"</span>, <span class="string_literal">"野菜"</span>)
 	vegetables,
+	@settingTranslation(<span class="keyword">null</span>, <span class="string_literal">"Fruits"</span>) @settingTranslation(<span class="string_literal">"de"</span>, <span class="string_literal">"Obst"</span>) @settingTranslation(<span class="string_literal">"ja"</span>, <span class="string_literal">"フルーツ"</span>)
 	fruit
-}
+	<span class="comment">//dfmt on
+</span>}
 
 <span class="comment">//dfmt off
 </span><span class="keyword">enum</span> Country
@@ -542,7 +549,9 @@
 	@colorSetting string favoriteColor;
 	@disabledSetting string someInformation = <span class="string_literal">"Just a hint, nothing changable"</span>;
 	Country favoriteCountry;
-	@optionsSetting FavoriteFood favoriteFood;
+	@settingTranslation(<span class="string_literal">"de"</span>, <span class="string_literal">"Lieblingsessen"</span>)  <span class="comment">// Translation of labels (only in translation contexts inside web interfaces)
+</span>	@settingTranslation(<span class="string_literal">"ja"</span>, <span class="string_literal">"好きな食べ物"</span>)  <span class="comment">// translations require at least vibe.d 0.8.1-alpha.3 to work
+</span>	@optionsSetting FavoriteFood favoriteFood;
 	BitFlags!SocialMedia usedSocialMedia;
 	@settingTitle(<span class="string_literal">"If you don't have any you can still say 1 because you have yourself."</span>)  <span class="comment">// Hover &amp; validation text
 </span>	@settingMin(1) <span class="keyword">int</span> numberOfFriends;
@@ -561,6 +570,7 @@ router.get(<span class="string_literal">"/"</span>, staticRedirect(<span class="
 <span class="keyword">enum</span> html = <span class="string_literal">`&lt;html&gt;
 	&lt;head&gt;
 		&lt;title&gt;Settings&lt;/title&gt;
+		&lt;meta charset="utf-8"/&gt;
 		&lt;link rel="stylesheet" href="/style.css"/&gt;
 		&lt;style&gt;
 			body,html{background:#efefef;color:rgba(0,0,0,0.87);font-family:Roboto,"Segoe UI",sans-serif;}
@@ -575,31 +585,50 @@ router.get(<span class="string_literal">"/"</span>, staticRedirect(<span class="
 	&lt;/body&gt;
 &lt;/html&gt;`</span>;
 
+<span class="keyword">struct</span> TranslationContext
+{
+	<span class="keyword">import</span> std.meta;
+
+	<span class="keyword">alias</span> languages = AliasSeq!(<span class="string_literal">"en"</span>, <span class="string_literal">"de"</span>, <span class="string_literal">"ja"</span>);
+}
+
 Config settingsInstance; <span class="comment">// You might fetch &amp; save this per user, web-config only changes the struct
-</span>router.get(<span class="string_literal">"/settings"</span>, <span class="keyword">delegate</span>(<span class="keyword">scope</span> req, <span class="keyword">scope</span> res) @safe{
-	string <span class="psymbol">settings</span> = renderSettings(settingsInstance);
-	res.writeBody(html.format(<span class="psymbol">settings</span>), <span class="string_literal">"text/html"</span>);
-});
-router.post(<span class="string_literal">"/settings"</span>, <span class="keyword">delegate</span>(<span class="keyword">scope</span> req, <span class="keyword">scope</span> res) @safe{
-	<span class="comment">// no-js &amp; nonautomatic setting route
-</span>	<span class="keyword">auto</span> ret = req.processSettings(settingsInstance);
-	string <span class="psymbol">settings</span> = renderSettings(settingsInstance, ret);
-	<span class="keyword">if</span> (ret)
+</span>
+@translationContext!TranslationContext <span class="keyword">class</span> SettingsInterface
+{
+	@safe <span class="keyword">void</span> getSettings(<span class="keyword">scope</span> HTTPServerRequest req, <span class="keyword">scope</span> HTTPServerResponse res)
 	{
-		<span class="comment">// Something changed, you can save here
-</span>	}
-	res.writeBody(html.format(<span class="psymbol">settings</span>), <span class="string_literal">"text/html"</span>);
-});
-router.post(<span class="string_literal">"/api/setting"</span>, <span class="keyword">delegate</span>(<span class="keyword">scope</span> req, <span class="keyword">scope</span> res) @safe{
-	<span class="comment">// js route called for each individual setting
-</span>	<span class="keyword">if</span> (req.processSettings(settingsInstance))
+		string settings = renderSettings(settingsInstance);
+		res.writeBody(html.format(settings), <span class="string_literal">"text/html"</span>);
+	}
+
+	@safe <span class="keyword">void</span> postSettings(<span class="keyword">scope</span> HTTPServerRequest req, <span class="keyword">scope</span> HTTPServerResponse res)
 	{
-		<span class="comment">// Save settings
-</span>		res.writeBody(<span class="string_literal">""</span>, 204); <span class="comment">// Send 200 or 204
-</span>	}
-	<span class="keyword">else</span>
-		res.writeBody(<span class="string_literal">""</span>, HTTPStatus.badRequest);
-});
+		<span class="comment">// no-js &amp; nonautomatic setting route
+</span>		<span class="keyword">auto</span> ret = req.processSettings(settingsInstance);
+		string settings = renderSettings(settingsInstance, ret);
+		<span class="keyword">if</span> (ret)
+		{
+			<span class="comment">// Something changed, you can save here
+</span>		}
+		res.writeBody(html.format(settings), <span class="string_literal">"text/html"</span>);
+	}
+
+	@path(<span class="string_literal">"/api/setting"</span>) @safe <span class="keyword">void</span> postJsSettings(<span class="keyword">scope</span> HTTPServerRequest req,
+			<span class="keyword">scope</span> HTTPServerResponse res)
+	{
+		<span class="comment">// js route called for each individual setting
+</span>		<span class="keyword">if</span> (req.processSettings(settingsInstance))
+		{
+			<span class="comment">// Save settings
+</span>			res.writeBody(<span class="string_literal">""</span>, 204); <span class="comment">// Send 200 or 204
+</span>		}
+		<span class="keyword">else</span>
+			res.writeBody(<span class="string_literal">""</span>, HTTPStatus.badRequest);
+	}
+}
+
+router.registerWebInterface(<span class="keyword">new</span> SettingsInterface);
 listenHTTP(<span class="keyword">new</span> HTTPServerSettings, router);
 runApplication();
 </code></li>
@@ -641,23 +670,146 @@ runApplication();
   <div class="ddoc_summary">
   <p class="para">
     Generates a HTML form for a configuration struct <code class="code">T</code> with automatic instant updates using AJAX.
+The fields can be annotated with the various UDAs found in this module. (setting enums + structs) <br>
+Supported types: <code class="code">enum</code> (drop down lists or radio box lists), <code class="code">std.typecons.BitFlags</code> (checkbox lists),
+<code class="code">bool</code> (checkbox), string types (text, email, url, etc.), numeric types (number), <code class="code">std.datetime.DateTime</code>
+(datetime-local), <code class="code">std.datetime.Date</code> (date), <code class="code">std.datetime.TimeOfDay</code> (time), <code class="code">vibe.inet.URL</code> (url)
 
   </p>
 </div>
-<div class="ddoc_description">
-  <h4>Discussion</h4>
-  <p class="para">
-    The fields can be annotated with the various UDAs found in this module. (setting enums + structs) <br>
+<div class="ddoc_params">
+  <h4>Parameters</h4>
+  <table cellspacing="0" cellpadding="5" border="0" class="graybox">
+    <tbody>
+      <tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">T</em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      the config struct type.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">InputGenerator</em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      the input generator to use.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">javascript</em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      the javascript code to embed including script tag.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">T <code class="code">value</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      an existing config <code class="code">value</code> to prefill the inputs.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">ulong <code class="code">set</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      a bitflag field which settings have been <code class="code">set</code> properly. Any bit <code class="code">set</code> to 0 will show an error string for the given field. Defaults to all success.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">string <code class="code">formAttributes</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      extra HTML to put into the form.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">string <code class="code">action</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      Path to the form submit HTTP endpoint.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">string <code class="code">method</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      Method to use for the submit HTTP endpoint. Also replaces {<code class="code">method</code>} inside the javascript template.
+    </p>
+  </div>
+</td>
+</tr>
+<tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">string <code class="code">jsAction</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      Path to the javascript form submit HTTP endpoint. Replaces {<code class="code">action</code>} inside the javascript template. If empty then no js will be emitted.
+    </p>
+  </div>
+</td>
+</tr>
 
-
-Supported types: <code class="code">enum</code> (drop down lists or radio box lists), <code class="code">std.typecons.BitFlags</code> (checkbox lists),
-
-
-<code class="code">bool</code> (checkbox), string types (text, email, url, etc.), numeric types (number), <code class="code">std.datetime.DateTime</code>
-
-
-(datetime-local), <code class="code">std.datetime.Date</code> (date), <code class="code">std.datetime.TimeOfDay</code> (time), <code class="code">vibe.inet.URL</code> (url)
-  </p>
+    </tbody>
+  </table>
 </div>
 
 </section>
@@ -1140,7 +1292,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.dropdownList"></span>string <code class="code">dropdownList</code>(Enum)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.dropdownList"></span>string <code class="code">dropdownList</code>(Enum, translations...)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
 
           </code>
         </p>
@@ -1172,7 +1324,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.optionList"></span>string <code class="code">optionList</code>(Enum)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.optionList"></span>string <code class="code">optionList</code>(Enum, translations...)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
 
           </code>
         </p>
@@ -1204,7 +1356,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.checkboxList"></span>string <code class="code">checkboxList</code>(Enum)(string <code class="code">name</code>, BitFlags!Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.checkboxList"></span>string <code class="code">checkboxList</code>(Enum, translations...)(string <code class="code">name</code>, BitFlags!Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
 
           </code>
         </p>
@@ -2190,6 +2342,177 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
         <p class="para">
           <code class="code">
             <span class="ddoc_anchor" id="settingLabel.label"></span>string <code class="code">label</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingTranslation" id="settingTranslation"><code class="code">settingTranslation</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingTranslation"></span>struct <code class="code">settingTranslation</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Changes the label if the current language (using a WebInterface translation context) matches the given one.
+You need at least vibe-d v0.8.1-alpha.3 to use this UDA.
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingTranslation.language" id="settingTranslation.language"><code class="code">language</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingTranslation.language"></span>string <code class="code">language</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingTranslation.label" id="settingTranslation.label"><code class="code">label</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingTranslation.label"></span>string <code class="code">label</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#enumTranslation" id="enumTranslation"><code class="code">enumTranslation</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="enumTranslation"></span>struct <code class="code">enumTranslation</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Relables all enum member names for a language. Give <code class="code">null</code> as first argument to change the default language
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#enumTranslation.language" id="enumTranslation.language"><code class="code">language</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="enumTranslation.language"></span>string <code class="code">language</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#enumTranslation.translations" id="enumTranslation.translations"><code class="code">translations</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="enumTranslation.translations"></span>string[] <code class="code">translations</code>;
 
           </code>
         </p>

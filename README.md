@@ -40,7 +40,8 @@ The default generated output looks like this (but more minified):
 ## Example
 
 ```d
-//import settings.aliases; // For shorter UDAs
+import webconfig;
+//import webconfig.aliases; // For shorter UDAs
 
 enum FavoriteFood
 {
@@ -153,7 +154,7 @@ router.post("/api/setting", delegate(scope req, scope res) @safe{
 });
 ```
 
-(See unittest in [source/settings/package.d](source/settings/package.d) for HTML of this example)
+(See unittest in [source/webconfig/package.d](source/webconfig/package.d) for HTML of this example)
 
 ![Demo Config](demo.png)
 

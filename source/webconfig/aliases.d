@@ -1,7 +1,7 @@
 ///
-module settings.aliases;
+module webconfig.aliases;
 
-import settings;
+import webconfig;
 
 ///
 alias email = emailSetting;

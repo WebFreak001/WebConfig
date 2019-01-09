@@ -1,6 +1,6 @@
 /// Main package containing all neccesarry functions
 /// See_Also: <a href="aliases.html">`settings.aliases`</a> for shorter UDAs
-module settings;
+module webconfig;
 
 import vibe.http.server;
 import vibe.inet.webform;
