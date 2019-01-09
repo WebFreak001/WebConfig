@@ -8,6 +8,8 @@ alias email = emailSetting;
 ///
 alias url = urlSetting;
 ///
+alias password = passwordSetting;
+///
 alias multiline = multilineSetting;
 ///
 alias range = rangeSetting;

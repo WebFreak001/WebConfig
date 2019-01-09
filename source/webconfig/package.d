@@ -242,6 +242,7 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	enum isStringArray = isDynamicArray!T && isSomeString!(ElementType!T);
 	enum isEmail = hasUDA!(Member[0], emailSetting);
 	enum isUrl = hasUDA!(Member[0], urlSetting);
+	enum isPassword = hasUDA!(Member[0], passwordSetting);
 	enum isMultiline = hasUDA!(Member[0], multilineSetting) || isStringArray;
 	enum isRange = hasUDA!(Member[0], rangeSetting);
 	enum isTime = hasUDA!(Member[0], timeSetting) || is(T == TimeOfDay);
@@ -328,8 +329,8 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	else static if (isSomeString!T || isStringArray)
 	{
 		static if (
-			isEmail + isUrl + isMultiline + isTime + isWeek + isMonth
-				+ isDatetimeLocal + isDate + isColor > 1)
+			isEmail + isUrl + isMultiline + isTime + isWeek + isMonth + isDatetimeLocal
+				+ isDate + isColor + isPassword > 1)
 			static assert(false, "string setting " ~ name ~ " has multiple type related attributes");
 		static if (isMultiline)
 		{
@@ -341,8 +342,8 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		}
 		else
 			return pre ~ InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time"
-					: isWeek ? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local"
-					: isDate ? "date" : isColor ? "color" : "text", value.to!string, raw, success);
+					: isWeek ? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate ? "date" : isColor
+					? "color" : isPassword ? "password" : "text", value.to!string, raw, success);
 	}
 	else static if (is(T == DateTime))
 		return pre ~ InputGenerator.textfield(uiName, "datetime-local",
@@ -428,6 +429,7 @@ bool processSetting(string name, Config)(HTTPServerRequest req, ref Config confi
 	enum isStringArray = isDynamicArray!T && isSomeString!(ElementType!T);
 	enum isEmail = hasUDA!(Member[0], emailSetting);
 	enum isUrl = hasUDA!(Member[0], urlSetting);
+	enum isPassword = hasUDA!(Member[0], passwordSetting);
 	enum isMultiline = hasUDA!(Member[0], multilineSetting) || isStringArray;
 	enum isRange = hasUDA!(Member[0], rangeSetting);
 	enum isTime = hasUDA!(Member[0], timeSetting);
@@ -550,8 +552,8 @@ bool processSetting(string name, Config)(HTTPServerRequest req, ref Config confi
 		else static if (isSomeString!T || isStringArray)
 		{
 			static if (
-				isEmail + isUrl + isMultiline + isTime + isWeek + isMonth
-					+ isDatetimeLocal + isDate + isColor > 1)
+				isEmail + isUrl + isMultiline + isTime + isWeek + isMonth + isDatetimeLocal
+					+ isDate + isColor + isPassword > 1)
 				static assert(false, "string setting " ~ name ~ " has multiple type related attributes");
 			static if (isMultiline)
 			{
@@ -977,6 +979,8 @@ struct DefaultInputGenerator
 enum emailSetting;
 /// Adds type="url" to string types
 enum urlSetting;
+/// Adds type="password" to string types
+enum passwordSetting;
 /// Makes string types textareas
 enum multilineSetting;
 /// Adds type="range" to numeric types
