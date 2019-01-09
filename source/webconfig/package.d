@@ -8,12 +8,14 @@ import vibe.inet.url;
 import vibe.web.web;
 
 import std.algorithm;
+import std.array;
 import std.ascii;
 import std.conv;
 import std.datetime;
 import std.format;
 import std.math;
 import std.meta;
+import std.range;
 import std.regex;
 import std.string;
 import std.traits;
@@ -97,6 +99,7 @@ unittest
 		@settingMax(10) ubyte orderedProductCount;
 		@settingLabel("Accept terms of service") @requiredSetting bool acceptTOS;
 		@settingPattern(`(ISBN\s+)?\d{3}-\d-\d{5}-\d{3}-\d`) string favoriteBookISBN;
+		@settingRows(8) string[] someStrings;
 	}
 
 	import vibe.vibe;
@@ -175,7 +178,8 @@ unittest
 /// The fields can be annotated with the various UDAs found in this module. (setting enums + structs) $(BR)
 /// Supported types: `enum` (drop down lists or radio box lists), `std.typecons.BitFlags` (checkbox lists),
 /// `bool` (checkbox), string types (text, email, url, etc.), numeric types (number), `std.datetime.DateTime`
-/// (datetime-local), `std.datetime.Date` (date), `std.datetime.TimeOfDay` (time), `vibe.inet.URL` (url)
+/// (datetime-local), `std.datetime.Date` (date), `std.datetime.TimeOfDay` (time), `vibe.inet.URL` (url),
+/// `string[]` (textarea taking each line)
 /// Params:
 ///   T = the config struct type.
 ///   InputGenerator = the input generator to use.
@@ -219,9 +223,10 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	alias Member = AliasSeq!(__traits(getMember, config, name));
 	auto value = __traits(getMember, config, name);
 	alias T = Unqual!(typeof(value));
+	enum isStringArray = isDynamicArray!T && isSomeString!(ElementType!T);
 	enum isEmail = hasUDA!(Member[0], emailSetting);
 	enum isUrl = hasUDA!(Member[0], urlSetting);
-	enum isMultiline = hasUDA!(Member[0], multilineSetting);
+	enum isMultiline = hasUDA!(Member[0], multilineSetting) || isStringArray;
 	enum isRange = hasUDA!(Member[0], rangeSetting);
 	enum isTime = hasUDA!(Member[0], timeSetting) || is(T == TimeOfDay);
 	enum isWeek = hasUDA!(Member[0], weekSetting);
@@ -243,6 +248,7 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	enum labels = getUDAs!(Member[0], settingLabel);
 	enum translations = getUDAs!(Member[0], settingTranslation);
 	enum enumTranslations = getUDAs!(Member[0], enumTranslation);
+	enum rows = getUDAs!(Member[0], settingRows);
 	static if (labels.length)
 		string uiName = labels[0].label;
 	else
@@ -281,6 +287,8 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		raw ~= ` pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"`;
 	static if (titles.length)
 		raw ~= " title=\"" ~ titles[0].title.encode ~ "\"";
+	static if (rows.length)
+		raw ~= " rows=\"" ~ rows[0].count.to!string ~ "\"";
 	static if (isRequired)
 		raw ~= " required";
 	static if (is(T == enum))
@@ -294,14 +302,19 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		return InputGenerator.checkboxList!(Enum, enumTranslations)(uiName, value, raw, success);
 	else static if (is(T == bool))
 		return InputGenerator.checkbox(uiName, value, raw, success);
-	else static if (isSomeString!T)
+	else static if (isSomeString!T || isStringArray)
 	{
 		static if (
 			isEmail + isUrl + isMultiline + isTime + isWeek + isMonth
 				+ isDatetimeLocal + isDate + isColor > 1)
 			static assert(false, "string setting " ~ name ~ " has multiple type related attributes");
 		static if (isMultiline)
-			return InputGenerator.textarea(uiName, value.to!string, raw, success);
+		{
+			static if (isStringArray)
+				return InputGenerator.textarea(uiName, value.to!(string[]).join("\n"), raw, success);
+			else
+				return InputGenerator.textarea(uiName, value.to!string, raw, success);
+		}
 		else
 			return InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time" : isWeek
 					? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate
@@ -387,9 +400,10 @@ bool processSetting(string name, Config)(HTTPServerRequest req, ref Config confi
 	alias Member = AliasSeq!(__traits(getMember, config, name));
 	auto member = __traits(getMember, config, name);
 	alias T = typeof(member);
+	enum isStringArray = isDynamicArray!T && isSomeString!(ElementType!T);
 	enum isEmail = hasUDA!(Member[0], emailSetting);
 	enum isUrl = hasUDA!(Member[0], urlSetting);
-	enum isMultiline = hasUDA!(Member[0], multilineSetting);
+	enum isMultiline = hasUDA!(Member[0], multilineSetting) || isStringArray;
 	enum isRange = hasUDA!(Member[0], rangeSetting);
 	enum isTime = hasUDA!(Member[0], timeSetting);
 	enum isWeek = hasUDA!(Member[0], weekSetting);
@@ -508,88 +522,104 @@ bool processSetting(string name, Config)(HTTPServerRequest req, ref Config confi
 		}
 		else static if (is(T == bool))
 			newval = allvals.length > 0;
-		else static if (isSomeString!T)
+		else static if (isSomeString!T || isStringArray)
 		{
 			static if (
 				isEmail + isUrl + isMultiline + isTime + isWeek + isMonth
 					+ isDatetimeLocal + isDate + isColor > 1)
 				static assert(false, "string setting " ~ name ~ " has multiple type related attributes");
 			static if (isMultiline)
-				newval = rawval;
-			else if (rawval.length)
 			{
-				if (strict && rawval.indexOfAny("\r\n") != -1)
-					return false;
-				else
-					rawval = rawval.tr("\r\n", "  ");
-				static if (isEmail)
+				static if (isStringArray)
 				{
-					rawval = rawval.strip;
-					import std.net.isemail;
-
-					if ((()@trusted => !rawval.isEmail(CheckDns.no, EmailStatusCode.any))())
-						return false;
-					newval = rawval;
-				}
-				else static if (isUrl)
-				{
-					try
-					{
-						newval = URL(rawval.strip).toString;
-					}
-					catch (Exception)
-					{
-						return false;
-					}
-				}
-				else static if (isTime)
-				{
-					rawval = rawval.strip;
-					if (!validateTimeString(rawval))
-						return false;
-					newval = rawval;
-				}
-				else static if (isWeek)
-				{
-					rawval = rawval.strip;
-					if (!validateWeekString(rawval))
-						return false;
-					newval = rawval;
-				}
-				else static if (isMonth)
-				{
-					rawval = rawval.strip;
-					if (!validateMonthString(rawval))
-						return false;
-					newval = rawval;
-				}
-				else static if (isDatetimeLocal)
-				{
-					rawval = rawval.strip;
-					if (!validateDatetimeLocalString(rawval))
-						return false;
-					newval = rawval;
-				}
-				else static if (isDate)
-				{
-					rawval = rawval.strip;
-					if (!validateDateString(rawval))
-						return false;
-					newval = rawval;
-				}
-				else static if (isColor)
-				{
-					rawval = rawval.strip;
-					if (!validateColorString(rawval))
-						return false;
-					newval = rawval;
+					static if (__traits(compiles, newval = rawval.lineSplitter.filter!"a.length".array))
+						newval = rawval.lineSplitter.filter!"a.length".array;
+					else
+						newval = rawval.lineSplitter
+							.filter!"a.length"
+							.map!(to!(ElementType!T))
+							.array;
 				}
 				else
 					newval = rawval;
 			}
 			else
 			{
-				newval = "";
+				if (rawval.length)
+				{
+					if (strict && rawval.indexOfAny("\r\n") != -1)
+						return false;
+					else
+						rawval = rawval.tr("\r\n", "  ");
+					static if (isEmail)
+					{
+						rawval = rawval.strip;
+						import std.net.isemail;
+
+						if ((()@trusted => !rawval.isEmail(CheckDns.no, EmailStatusCode.any))())
+							return false;
+						newval = rawval;
+					}
+					else static if (isUrl)
+					{
+						try
+						{
+							newval = URL(rawval.strip).toString;
+						}
+						catch (Exception)
+						{
+							return false;
+						}
+					}
+					else static if (isTime)
+					{
+						rawval = rawval.strip;
+						if (!validateTimeString(rawval))
+							return false;
+						newval = rawval;
+					}
+					else static if (isWeek)
+					{
+						rawval = rawval.strip;
+						if (!validateWeekString(rawval))
+							return false;
+						newval = rawval;
+					}
+					else static if (isMonth)
+					{
+						rawval = rawval.strip;
+						if (!validateMonthString(rawval))
+							return false;
+						newval = rawval;
+					}
+					else static if (isDatetimeLocal)
+					{
+						rawval = rawval.strip;
+						if (!validateDatetimeLocalString(rawval))
+							return false;
+						newval = rawval;
+					}
+					else static if (isDate)
+					{
+						rawval = rawval.strip;
+						if (!validateDateString(rawval))
+							return false;
+						newval = rawval;
+					}
+					else static if (isColor)
+					{
+						rawval = rawval.strip;
+						if (!validateColorString(rawval))
+							return false;
+						newval = rawval;
+					}
+					else
+						newval = rawval;
+				}
+				else
+				{
+					newval = "";
+				}
 			}
 		}
 		else static if (is(T == DateTime))
@@ -1001,6 +1031,13 @@ struct settingLabel
 {
 	///
 	string label;
+}
+
+/// Sets the number of rows of a textarea
+struct settingRows
+{
+	///
+	int count;
 }
 
 /// Changes the label if the current language (using a WebInterface translation context) matches the given one.
