@@ -172,6 +172,16 @@ unittest
 /// Supported types: `enum` (drop down lists or radio box lists), `std.typecons.BitFlags` (checkbox lists),
 /// `bool` (checkbox), string types (text, email, url, etc.), numeric types (number), `std.datetime.DateTime`
 /// (datetime-local), `std.datetime.Date` (date), `std.datetime.TimeOfDay` (time), `vibe.inet.URL` (url)
+/// Params:
+///   T = the config struct type.
+///   InputGenerator = the input generator to use.
+///   javascript = the javascript code to embed including script tag.
+///   value = an existing config value to prefill the inputs.
+///   set = a bitflag field which settings have been set properly. Any bit set to 0 will show an error string for the given field. Defaults to all success.
+///   formAttributes = extra HTML to put into the form.
+///   action = Path to the form submit HTTP endpoint.
+///   method = Method to use for the submit HTTP endpoint. Also replaces {method} inside the javascript template.
+///   jsAction = Path to the javascript form submit HTTP endpoint. Replaces {action} inside the javascript template. If empty then no js will be emitted.
 string renderSettings(T, InputGenerator = DefaultInputGenerator,
 		alias javascript = DefaultJavascriptCode)(T value, string formAttributes = "",
 		string action = "/settings", string method = "POST", string jsAction = "/api/setting") @safe
@@ -194,9 +204,8 @@ string renderSettings(T, InputGenerator = DefaultInputGenerator,
 	}
 	return `<form action="%s" method="%s"%s>%s<input type="submit" value="Save"/></form>`.format(
 			action.encode, method.encode,
-			formAttributes.length
-			? " " ~ formAttributes : "", settings.join()) ~ DefaultJavascriptCode.replace(
-			"{action}", jsAction).replace("{method}", method);
+			formAttributes.length ? " " ~ formAttributes : "", settings.join()) ~ (jsAction.length
+			? DefaultJavascriptCode.replace("{action}", jsAction).replace("{method}", method) : "");
 }
 
 /// Generates a single input
