@@ -35,3 +35,7 @@ alias pattern = settingPattern;
 alias title = settingTitle;
 ///
 alias label = settingLabel;
+///
+alias rows = settingRows;
+///
+alias html = settingHTML;

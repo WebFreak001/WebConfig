@@ -86,6 +86,10 @@ unittest
 		@dateSetting string myMothersBirthday;
 		// OR
 		Date myFathersBirthday;
+
+		// inserts some html before some element
+		@settingHTML("<hr/><p>Some cooler information now follows.</p>")
+
 		@colorSetting string favoriteColor;
 		@disabledSetting string someInformation = "Just a hint, nothing changable";
 		Country favoriteCountry;
@@ -170,7 +174,9 @@ unittest
 	}
 
 	router.registerWebInterface(new SettingsInterface);
-	listenHTTP(new HTTPServerSettings, router);
+	auto httpSettings = new HTTPServerSettings;
+	httpSettings.port = 8080;
+	listenHTTP(httpSettings, router);
 	runApplication();
 }
 
@@ -246,9 +252,10 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	enum patterns = getUDAs!(Member[0], settingPattern);
 	enum titles = getUDAs!(Member[0], settingTitle);
 	enum labels = getUDAs!(Member[0], settingLabel);
+	enum rows = getUDAs!(Member[0], settingRows);
 	enum translations = getUDAs!(Member[0], settingTranslation);
 	enum enumTranslations = getUDAs!(Member[0], enumTranslation);
-	enum rows = getUDAs!(Member[0], settingRows);
+	enum html = getUDAs!(Member[0], settingHTML);
 	static if (labels.length)
 		string uiName = labels[0].label;
 	else
@@ -291,17 +298,23 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		raw ~= " rows=\"" ~ rows[0].count.to!string ~ "\"";
 	static if (isRequired)
 		raw ~= " required";
+
+	static if (html.length > 0)
+		enum string pre = [html].map!"a.raw".join("\n");
+	else
+		enum string pre = null;
+
 	static if (is(T == enum))
 	{
 		static if (isOptions)
-			return InputGenerator.optionList!(T, enumTranslations)(uiName, value, raw, success);
+			return pre ~ InputGenerator.optionList!(T, enumTranslations)(uiName, value, raw, success);
 		else
-			return InputGenerator.dropdownList!(T, enumTranslations)(uiName, value, raw, success);
+			return pre ~ InputGenerator.dropdownList!(T, enumTranslations)(uiName, value, raw, success);
 	}
 	else static if (is(T == BitFlags!Enum, Enum))
-		return InputGenerator.checkboxList!(Enum, enumTranslations)(uiName, value, raw, success);
+		return pre ~ InputGenerator.checkboxList!(Enum, enumTranslations)(uiName, value, raw, success);
 	else static if (is(T == bool))
-		return InputGenerator.checkbox(uiName, value, raw, success);
+		return pre ~ InputGenerator.checkbox(uiName, value, raw, success);
 	else static if (isSomeString!T || isStringArray)
 	{
 		static if (
@@ -311,24 +324,24 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		static if (isMultiline)
 		{
 			static if (isStringArray)
-				return InputGenerator.textarea(uiName, value.to!(string[]).join("\n"), raw, success);
+				return pre ~ InputGenerator.textarea(uiName, value.to!(string[]).join("\n"), raw, success);
 			else
-				return InputGenerator.textarea(uiName, value.to!string, raw, success);
+				return pre ~ InputGenerator.textarea(uiName, value.to!string, raw, success);
 		}
 		else
-			return InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time" : isWeek
+			return pre ~ InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time" : isWeek
 					? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate
 					? "date" : isColor ? "color" : "text", value.to!string, raw, success);
 	}
 	else static if (is(T == DateTime))
-		return InputGenerator.textfield(uiName, "datetime-local",
+		return pre ~ InputGenerator.textfield(uiName, "datetime-local",
 				value.toISOExtString[0 .. 16], raw, success);
 	else static if (is(T == Date))
-		return InputGenerator.textfield(uiName, "date", value.toISOExtString, raw, success);
+		return pre ~ InputGenerator.textfield(uiName, "date", value.toISOExtString, raw, success);
 	else static if (is(T == TimeOfDay))
-		return InputGenerator.textfield(uiName, "time", value.toISOExtString[0 .. 5], raw, success);
+		return pre ~ InputGenerator.textfield(uiName, "time", value.toISOExtString[0 .. 5], raw, success);
 	else static if (is(T == URL))
-		return InputGenerator.textfield(uiName, "url", value.toString, raw, success);
+		return pre ~ InputGenerator.textfield(uiName, "url", value.toString, raw, success);
 	else static if (isNumeric!T)
 	{
 		double min, max;
@@ -347,7 +360,7 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 			raw ~= " max=\"" ~ max.to!string ~ "\"";
 		static if (steps.length)
 			raw ~= " step=\"" ~ steps[0].step.to!string ~ "\"";
-		return InputGenerator.textfield(uiName, isRange ? "range" : "number",
+		return pre ~ InputGenerator.textfield(uiName, isRange ? "range" : "number",
 				value.to!string, raw, success);
 	}
 	else
@@ -1057,6 +1070,13 @@ struct enumTranslation
 	string language;
 	///
 	string[] translations;
+}
+
+/// Inserts raw HTML code before an element.
+struct settingHTML
+{
+	///
+	string raw;
 }
 
 string translateEnum(T, translations...)(T value, string fallback) @safe
