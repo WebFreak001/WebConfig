@@ -546,6 +546,10 @@
 	@dateSetting string myMothersBirthday;
 	<span class="comment">// OR
 </span>	Date myFathersBirthday;
+
+	<span class="comment">// inserts some html before some element
+</span>	@settingHTML(<span class="string_literal">"&lt;hr/&gt;&lt;p&gt;Some cooler information now follows.&lt;/p&gt;"</span>)
+
 	@colorSetting string favoriteColor;
 	@disabledSetting string someInformation = <span class="string_literal">"Just a hint, nothing changable"</span>;
 	Country favoriteCountry;
@@ -559,6 +563,7 @@
 	@settingMax(10) <span class="keyword">ubyte</span> orderedProductCount;
 	@settingLabel(<span class="string_literal">"Accept terms of service"</span>) @requiredSetting <span class="keyword">bool</span> acceptTOS;
 	@settingPattern(<span class="string_literal">`(ISBN\s+)?\d{3}-\d-\d{5}-\d{3}-\d`</span>) string favoriteBookISBN;
+	@settingRows(8) string[] someStrings;
 }
 
 <span class="keyword">import</span> vibe.vibe;
@@ -629,7 +634,9 @@ Config settingsInstance; <span class="comment">// You might fetch &amp; save thi
 }
 
 router.registerWebInterface(<span class="keyword">new</span> SettingsInterface);
-listenHTTP(<span class="keyword">new</span> HTTPServerSettings, router);
+<span class="keyword">auto</span> httpSettings = <span class="keyword">new</span> HTTPServerSettings;
+httpSettings.port = 8080;
+listenHTTP(httpSettings, router);
 runApplication();
 </code></li>
       </ol>
@@ -673,7 +680,8 @@ runApplication();
 The fields can be annotated with the various UDAs found in this module. (setting enums + structs) <br>
 Supported types: <code class="code">enum</code> (drop down lists or radio box lists), <code class="code">std.typecons.BitFlags</code> (checkbox lists),
 <code class="code">bool</code> (checkbox), string types (text, email, url, etc.), numeric types (number), <code class="code">std.datetime.DateTime</code>
-(datetime-local), <code class="code">std.datetime.Date</code> (date), <code class="code">std.datetime.TimeOfDay</code> (time), <code class="code">vibe.inet.URL</code> (url)
+(datetime-local), <code class="code">std.datetime.Date</code> (date), <code class="code">std.datetime.TimeOfDay</code> (time), <code class="code">vibe.inet.URL</code> (url),
+<code class="code">string[]</code> (textarea taking each line)
 
   </p>
 </div>
@@ -2362,6 +2370,66 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
 </li><li class="ddoc_member">
   <div class="ddoc_member_header">
   <div class="ddoc_header_anchor">
+  <a href="#settingRows" id="settingRows"><code class="code">settingRows</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingRows"></span>struct <code class="code">settingRows</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Sets the number of rows of a textarea
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingRows.count" id="settingRows.count"><code class="code">count</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingRows.count"></span>int <code class="code">count</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
   <a href="#settingTranslation" id="settingTranslation"><code class="code">settingTranslation</code></a>
 </div>
 </div><div class="ddoc_decl">
@@ -2513,6 +2581,66 @@ You need at least vibe-d v0.8.1-alpha.3 to use this UDA.
         <p class="para">
           <code class="code">
             <span class="ddoc_anchor" id="enumTranslation.translations"></span>string[] <code class="code">translations</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingHTML" id="settingHTML"><code class="code">settingHTML</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingHTML"></span>struct <code class="code">settingHTML</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Inserts raw HTML code before an element.
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingHTML.raw" id="settingHTML.raw"><code class="code">raw</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingHTML.raw"></span>string <code class="code">raw</code>;
 
           </code>
         </p>
