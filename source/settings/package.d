@@ -299,9 +299,9 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		static if (isMultiline)
 			return InputGenerator.textarea(uiName, value.to!string, raw, success);
 		else
-			return InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time" : isWeek ? "week"
-					: isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate ? "date"
-					: isColor ? "color" : "text", value.to!string, raw, success);
+			return InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time" : isWeek
+					? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate
+					? "date" : isColor ? "color" : "text", value.to!string, raw, success);
 	}
 	else static if (is(T == DateTime))
 		return InputGenerator.textfield(uiName, "datetime-local",
@@ -509,8 +509,7 @@ bool processSetting(string name, Config)(HTTPServerRequest req, ref Config confi
 			static if (
 				isEmail + isUrl + isMultiline + isTime + isWeek + isMonth
 					+ isDatetimeLocal + isDate + isColor > 1)
-				static assert(false,
-						"string setting " ~ name ~ " has multiple type related attributes");
+				static assert(false, "string setting " ~ name ~ " has multiple type related attributes");
 			static if (isMultiline)
 				newval = rawval;
 			else if (rawval.length)
@@ -796,8 +795,8 @@ bool validateColorString(string s) @safe
 {
 	if (s.length != 7)
 		return false;
-	if (s[0] != '#' || !s[1].isHexDigit || !s[2].isHexDigit
-			|| !s[3].isHexDigit || !s[4].isHexDigit || !s[5].isHexDigit || !s[6].isHexDigit)
+	if (s[0] != '#' || !s[1].isHexDigit || !s[2].isHexDigit || !s[3].isHexDigit
+			|| !s[4].isHexDigit || !s[5].isHexDigit || !s[6].isHexDigit)
 		return false;
 	return true;
 }
@@ -877,8 +876,8 @@ struct DefaultInputGenerator
 			string raw, bool success)
 	{
 		const className = success ? "" : " error";
-		string ret = `<label class="select` ~ className ~ `"><span>`
-			~ name.encode ~ `</span><select` ~ raw ~ `>`;
+		string ret = `<label class="select` ~ className ~ `"><span>` ~ name.encode
+			~ `</span><select` ~ raw ~ `>`;
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= `<option value="` ~ (cast(OriginalType!Enum) __traits(getMember,
 					Enum, member)).to!string.encode ~ `"` ~ (value == __traits(getMember,
@@ -888,18 +887,15 @@ struct DefaultInputGenerator
 	}
 
 	/// Called for enums displayed as list of radio boxes (you need to iterate over the enum members)
-	static string optionList(Enum, translations...)(string name, Enum value,
-			string raw, bool success)
+	static string optionList(Enum, translations...)(string name, Enum value, string raw, bool success)
 	{
 		const className = success ? "" : " error";
-		string ret = `<label class="checkbox options` ~ className ~ `"><span>`
-			~ name.encode ~ "</span>";
+		string ret = `<label class="checkbox options` ~ className ~ `"><span>` ~ name.encode ~ "</span>";
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= checkbox(__traits(getMember, Enum, member).translateEnum!(Enum,
 					translations)(member.makeHumanName), value == __traits(getMember, Enum, member),
-					raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
-						Enum, member)).to!string.encode ~ `"`, true).replace(
-					`type="checkbox"`, `type="radio"`);
+					raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember, Enum,
+						member)).to!string.encode ~ `"`, true).replace(`type="checkbox"`, `type="radio"`);
 		return ret ~ `</label>` ~ errorString(success);
 	}
 
@@ -908,13 +904,12 @@ struct DefaultInputGenerator
 			BitFlags!Enum value, string raw, bool success)
 	{
 		const className = success ? "" : " error";
-		string ret = `<label class="checkbox flags` ~ className ~ `"><span>`
-			~ name.encode ~ "</span>";
+		string ret = `<label class="checkbox flags` ~ className ~ `"><span>` ~ name.encode ~ "</span>";
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= checkbox(__traits(getMember, Enum, member).translateEnum!(Enum,
-					translations)(member.makeHumanName), !!(value & __traits(getMember, Enum, member)),
-					raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
-						Enum, member)).to!string.encode ~ `"`, true);
+					translations)(member.makeHumanName), !!(value & __traits(getMember, Enum,
+					member)), raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
+					Enum, member)).to!string.encode ~ `"`, true);
 		return ret ~ `</label>` ~ errorString(success);
 	}
 }
@@ -1023,7 +1018,7 @@ struct enumTranslation
 	string[] translations;
 }
 
-string translateEnum(T, translations...)(T value, string fallback) @safe 
+string translateEnum(T, translations...)(T value, string fallback) @safe
 		if (is(T == enum))
 {
 	static if (translations.length)
