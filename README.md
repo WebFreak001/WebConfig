@@ -44,9 +44,24 @@ The default generated output looks like this (but more minified):
 
 enum FavoriteFood
 {
+	@settingTranslation(null, "Fish")
+	@settingTranslation("de", "Fisch")
+	@settingTranslation("ja", "魚")
 	fish,
+
+	@settingTranslation(null, "Meat")
+	@settingTranslation("de", "Fleisch")
+	@settingTranslation("ja", "肉")
 	meat,
+
+	@settingTranslation(null, "Vegetables")
+	@settingTranslation("de", "Gemüse")
+	@settingTranslation("ja", "野菜")
 	vegetables,
+
+	@settingTranslation(null, "Fruits")
+	@settingTranslation("de", "Obst")
+	@settingTranslation("ja", "フルーツ")
 	fruit
 }
 
@@ -99,9 +114,6 @@ struct Config
 	Country favoriteCountry;
 	@settingTranslation("de", "Lieblingsessen")  // Translation of labels (only in translation contexts inside web interfaces)
 	@settingTranslation("ja", "好きな食べ物")  // translations require at least vibe.d 0.8.1-alpha.3 to work
-	@enumTranslation(null, ["Fish", "Meat", "Vegetables", "Fruits"])
-	@enumTranslation("de", ["Fisch", "Fleisch", "Gemüse", "Obst"])
-	@enumTranslation("ja", ["魚", "肉", "野菜", "フルーツ"])
 	@optionsSetting FavoriteFood favoriteFood;
 	BitFlags!SocialMedia usedSocialMedia;
 	@settingTitle("If you don't have any you can still say 1 because you have yourself.")  // Hover & validation text

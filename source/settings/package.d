@@ -25,10 +25,17 @@ unittest
 {
 	enum FavoriteFood
 	{
+		// enum UDAs require at least dmd 2.082.0
+		//dfmt off
+		@settingTranslation(null, "Fish") @settingTranslation("de", "Fisch") @settingTranslation("ja", "魚")
 		fish,
+		@settingTranslation(null, "Meat") @settingTranslation("de", "Fleisch") @settingTranslation("ja", "肉")
 		meat,
+		@settingTranslation(null, "Vegetables") @settingTranslation("de", "Gemüse") @settingTranslation("ja", "野菜")
 		vegetables,
+		@settingTranslation(null, "Fruits") @settingTranslation("de", "Obst") @settingTranslation("ja", "フルーツ")
 		fruit
+		//dfmt on
 	}
 
 	//dfmt off
@@ -82,9 +89,6 @@ unittest
 		Country favoriteCountry;
 		@settingTranslation("de", "Lieblingsessen")  // Translation of labels (only in translation contexts inside web interfaces)
 		@settingTranslation("ja", "好きな食べ物")  // translations require at least vibe.d 0.8.1-alpha.3 to work
-		@enumTranslation(null, ["Fish", "Meat", "Vegetables", "Fruits"])
-		@enumTranslation("de", ["Fisch", "Fleisch", "Gemüse", "Obst"])
-		@enumTranslation("ja", ["魚", "肉", "野菜", "フルーツ"])
 		@optionsSetting FavoriteFood favoriteFood;
 		BitFlags!SocialMedia usedSocialMedia;
 		@settingTitle("If you don't have any you can still say 1 because you have yourself.")  // Hover & validation text
@@ -148,7 +152,7 @@ unittest
 			res.writeBody(html.format(settings), "text/html");
 		}
 
-		@path("/api/settings") @safe void postJsSettings(scope HTTPServerRequest req,
+		@path("/api/setting") @safe void postJsSettings(scope HTTPServerRequest req,
 				scope HTTPServerResponse res)
 		{
 			// js route called for each individual setting
@@ -1041,6 +1045,33 @@ string translateEnum(T, translations...)(T value, string fallback) @safe
 					{
 						if (translation.language == lang)
 							ret = translation.translations[i];
+					}
+				}
+				return ret is null ? fallback : ret;
+			}
+		}
+	}
+	else static if (__traits(compiles, __traits(getAttributes,
+			__traits(getMember, T, __traits(allMembers, T)[0]))))
+	{
+		foreach (i, other; __traits(allMembers, T))
+		{
+			if (__traits(getMember, T, other) == value)
+			{
+				static if (is(typeof(language) == string))
+					auto lang = (() @trusted => language)();
+				string ret = null;
+				foreach (attr; __traits(getAttributes, __traits(getMember, T, other)))
+				{
+					static if (is(typeof(attr) == settingTranslation))
+					{
+						if (attr.language is null && ret is null)
+							ret = attr.label;
+						else static if (is(typeof(language) == string))
+						{
+							if (attr.language == lang)
+								ret = attr.label;
+						}
 					}
 				}
 				return ret is null ? fallback : ret;
