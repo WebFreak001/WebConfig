@@ -197,7 +197,7 @@ unittest
 ///   method = Method to use for the submit HTTP endpoint. Also replaces {method} inside the javascript template.
 ///   jsAction = Path to the javascript form submit HTTP endpoint. Replaces {action} inside the javascript template. If empty then no js will be emitted.
 string renderSettings(T, InputGenerator = DefaultInputGenerator,
-		alias javascript = DefaultJavascriptCode)(T value, string formAttributes = "",
+		string javascript = DefaultJavascriptCode)(T value, string formAttributes = "",
 		string action = "/settings", string method = "POST", string jsAction = "/api/setting") @safe
 {
 	return renderSettings!(T, InputGenerator, javascript)(value, ulong.max,
@@ -206,7 +206,7 @@ string renderSettings(T, InputGenerator = DefaultInputGenerator,
 
 /// ditto
 string renderSettings(T, InputGenerator = DefaultInputGenerator,
-		alias javascript = DefaultJavascriptCode)(T value, ulong set, string formAttributes = "",
+		string javascript = DefaultJavascriptCode)(T value, ulong set, string formAttributes = "",
 		string action = "/settings", string method = "POST", string jsAction = "/api/setting") @safe
 {
 	method = method.toUpper;
@@ -216,10 +216,20 @@ string renderSettings(T, InputGenerator = DefaultInputGenerator,
 		bool success = (set & (1 << cast(ulong) i)) != 0;
 		settings ~= renderSetting!(InputGenerator, member)(value, success);
 	}
-	return `<form action="%s" method="%s"%s>%s<input type="submit" value="Save"/></form>`.format(
-			action.encode, method.encode,
-			formAttributes.length ? " " ~ formAttributes : "", settings.join()) ~ (jsAction.length
-			? DefaultJavascriptCode.replace("{action}", jsAction).replace("{method}", method) : "");
+	enum templates = getUDAs!(T, formTemplate);
+	static if (templates.length)
+	{
+		static assert(templates.length == 1, "Can only have 1 formTemplate");
+		enum formTemplate = templates[0].code;
+	}
+	else
+		enum formTemplate = DefaultFormTemplate;
+	string ret = formTemplate.format(action.encode, method.encode,
+			formAttributes.length ? " " ~ formAttributes : "", settings.join());
+	static if (javascript.length)
+		if (jsAction.length)
+			return ret ~ javascript.replace("{action}", jsAction).replace("{method}", method);
+	return ret;
 }
 
 /// Generates a single input
@@ -324,14 +334,15 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		static if (isMultiline)
 		{
 			static if (isStringArray)
-				return pre ~ InputGenerator.textarea(uiName, value.to!(string[]).join("\n"), raw, success);
+				return pre ~ InputGenerator.textarea(uiName, value.to!(string[])
+						.join("\n"), raw, success);
 			else
 				return pre ~ InputGenerator.textarea(uiName, value.to!string, raw, success);
 		}
 		else
-			return pre ~ InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time" : isWeek
-					? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate
-					? "date" : isColor ? "color" : "text", value.to!string, raw, success);
+			return pre ~ InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time"
+					: isWeek ? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local"
+					: isDate ? "date" : isColor ? "color" : "text", value.to!string, raw, success);
 	}
 	else static if (is(T == DateTime))
 		return pre ~ InputGenerator.textfield(uiName, "datetime-local",
@@ -339,7 +350,8 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	else static if (is(T == Date))
 		return pre ~ InputGenerator.textfield(uiName, "date", value.toISOExtString, raw, success);
 	else static if (is(T == TimeOfDay))
-		return pre ~ InputGenerator.textfield(uiName, "time", value.toISOExtString[0 .. 5], raw, success);
+		return pre ~ InputGenerator.textfield(uiName, "time",
+				value.toISOExtString[0 .. 5], raw, success);
 	else static if (is(T == URL))
 		return pre ~ InputGenerator.textfield(uiName, "url", value.toString, raw, success);
 	else static if (isNumeric!T)
@@ -1079,6 +1091,15 @@ struct settingHTML
 	string raw;
 }
 
+/// Changes how the form HTML template looks
+struct formTemplate
+{
+	/// Contains the std.format formattable template code. $(BR)
+	/// Arguments in order are: string action, string method, string formArguments, string html $(BR)
+	/// html is last so you can embed it using %4$s without throwing an orphan arguments exception.
+	string code;
+}
+
 string translateEnum(T, translations...)(T value, string fallback) @safe
 		if (is(T == enum))
 {
@@ -1230,3 +1251,5 @@ enum DefaultJavascriptCode = q{<script id="_setting_script_">
 	}
 	(document.currentScript || document.getElementById("_setting_script_")).previousSibling.querySelector("input[type=submit]").disabled = true;
 </script>};
+
+enum DefaultFormTemplate = `<form action="%s" method="%s"%s>%s<input type="submit" value="Save"/></form>`;

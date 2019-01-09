@@ -662,9 +662,9 @@ runApplication();
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="renderSettings"></span>@safe string <code class="code">renderSettings</code>(T, InputGenerator = DefaultInputGenerator, alias javascript = DefaultJavascriptCode)(T <code class="code">value</code>, string <code class="code">formAttributes</code> = "", string <code class="code">action</code> = "/settings", string <code class="code">method</code> = "POST", string <code class="code">jsAction</code> = "/api/setting");
+            <span class="ddoc_anchor" id="renderSettings"></span>@safe string <code class="code">renderSettings</code>(T, InputGenerator = DefaultInputGenerator, string javascript = DefaultJavascriptCode)(T <code class="code">value</code>, string <code class="code">formAttributes</code> = "", string <code class="code">action</code> = "/settings", string <code class="code">method</code> = "POST", string <code class="code">jsAction</code> = "/api/setting");
 <br>
-@safe string <code class="code">renderSettings</code>(T, InputGenerator = DefaultInputGenerator, alias javascript = DefaultJavascriptCode)(T <code class="code">value</code>, ulong <code class="code">set</code>, string <code class="code">formAttributes</code> = "", string <code class="code">action</code> = "/settings", string <code class="code">method</code> = "POST", string <code class="code">jsAction</code> = "/api/setting");
+@safe string <code class="code">renderSettings</code>(T, InputGenerator = DefaultInputGenerator, string javascript = DefaultJavascriptCode)(T <code class="code">value</code>, ulong <code class="code">set</code>, string <code class="code">formAttributes</code> = "", string <code class="code">action</code> = "/settings", string <code class="code">method</code> = "POST", string <code class="code">jsAction</code> = "/api/setting");
 
           </code>
         </p>
@@ -2650,6 +2650,75 @@ You need at least vibe-d v0.8.1-alpha.3 to use this UDA.
 </div>
 <div class="ddoc_decl">
   
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#formTemplate" id="formTemplate"><code class="code">formTemplate</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="formTemplate"></span>struct <code class="code">formTemplate</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Changes how the form HTML template looks
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#formTemplate.code" id="formTemplate.code"><code class="code">code</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="formTemplate.code"></span>string <code class="code">code</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Contains the std.format formattable template <code class="code">code</code>. <br>
+Arguments in order are: string action, string method, string formArguments, string html <br>
+html is last so you can embed it using %4$s without throwing an orphan arguments exception.
+  </p>
+</div>
+
+</section>
 
 </div>
 
