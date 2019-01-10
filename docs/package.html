@@ -1204,7 +1204,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.textfield"></span>static @safe string <code class="code">textfield</code>(string <code class="code">name</code>, string <code class="code">type</code>, string <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.textfield"></span>static @safe string <code class="code">textfield</code>(string <code class="code">name</code>, string <code class="code">type</code>, string <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>, string[] <code class="code">classes</code>);
 
           </code>
         </p>
@@ -1236,7 +1236,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.textarea"></span>static @safe string <code class="code">textarea</code>(string <code class="code">name</code>, string <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.textarea"></span>static @safe string <code class="code">textarea</code>(string <code class="code">name</code>, string <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>, string[] <code class="code">classes</code>);
 
           </code>
         </p>
@@ -1268,7 +1268,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.checkbox"></span>static @safe string <code class="code">checkbox</code>(string <code class="code">name</code>, bool <code class="code">checked</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.checkbox"></span>static @safe string <code class="code">checkbox</code>(string <code class="code">name</code>, bool <code class="code">checked</code>, string <code class="code">raw</code>, bool <code class="code">success</code>, string[] <code class="code">classes</code>);
 
           </code>
         </p>
@@ -1300,7 +1300,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.dropdownList"></span>string <code class="code">dropdownList</code>(Enum, translations...)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.dropdownList"></span>string <code class="code">dropdownList</code>(Enum, translations...)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>, string[] <code class="code">classes</code>);
 
           </code>
         </p>
@@ -1332,7 +1332,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.optionList"></span>string <code class="code">optionList</code>(Enum, translations...)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.optionList"></span>string <code class="code">optionList</code>(Enum, translations...)(string <code class="code">name</code>, Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>, string[] <code class="code">classes</code>);
 
           </code>
         </p>
@@ -1364,7 +1364,7 @@ Supported types: <code class="code">enum</code> (drop down lists or radio box li
       <div class="dlang">
         <p class="para">
           <code class="code">
-            <span class="ddoc_anchor" id="DefaultInputGenerator.checkboxList"></span>string <code class="code">checkboxList</code>(Enum, translations...)(string <code class="code">name</code>, BitFlags!Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>);
+            <span class="ddoc_anchor" id="DefaultInputGenerator.checkboxList"></span>string <code class="code">checkboxList</code>(Enum, translations...)(string <code class="code">name</code>, BitFlags!Enum <code class="code">value</code>, string <code class="code">raw</code>, bool <code class="code">success</code>, string[] <code class="code">classes</code>);
 
           </code>
         </p>

@@ -281,8 +281,12 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 					uiName = translation.label;
 	}
 	string raw = ` name="` ~ name ~ `"`;
+
 	static if (classNames.length)
-		raw ~= " class=\"" ~ [classNames].map!"a.className".join(" ") ~ "\"";
+		enum string[] classes = [classNames].map!"a.className".array;
+	else
+		enum string[] classes = null;
+
 	static if (isDisabled)
 		raw ~= " disabled";
 	else static if (!isNoJS)
@@ -321,14 +325,17 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	static if (is(T == enum))
 	{
 		static if (isOptions)
-			return pre ~ InputGenerator.optionList!(T, enumTranslations)(uiName, value, raw, success);
+			return pre ~ InputGenerator.optionList!(T, enumTranslations)(uiName,
+					value, raw, success, classes);
 		else
-			return pre ~ InputGenerator.dropdownList!(T, enumTranslations)(uiName, value, raw, success);
+			return pre ~ InputGenerator.dropdownList!(T, enumTranslations)(uiName,
+					value, raw, success, classes);
 	}
 	else static if (is(T == BitFlags!Enum, Enum))
-		return pre ~ InputGenerator.checkboxList!(Enum, enumTranslations)(uiName, value, raw, success);
+		return pre ~ InputGenerator.checkboxList!(Enum, enumTranslations)(uiName,
+				value, raw, success, classes);
 	else static if (is(T == bool))
-		return pre ~ InputGenerator.checkbox(uiName, value, raw, success);
+		return pre ~ InputGenerator.checkbox(uiName, value, raw, success, classes);
 	else static if (isSomeString!T || isStringArray)
 	{
 		static if (
@@ -339,25 +346,26 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		{
 			static if (isStringArray)
 				return pre ~ InputGenerator.textarea(uiName, value.to!(string[])
-						.join("\n"), raw, success);
+						.join("\n"), raw, success, classes);
 			else
-				return pre ~ InputGenerator.textarea(uiName, value.to!string, raw, success);
+				return pre ~ InputGenerator.textarea(uiName, value.to!string, raw, success, classes);
 		}
 		else
 			return pre ~ InputGenerator.textfield(uiName, isEmail ? "email" : isUrl ? "url" : isTime ? "time"
 					: isWeek ? "week" : isMonth ? "month" : isDatetimeLocal ? "datetime-local" : isDate ? "date" : isColor
-					? "color" : isPassword ? "password" : "text", value.to!string, raw, success);
+					? "color" : isPassword ? "password" : "text", value.to!string, raw, success, classes);
 	}
 	else static if (is(T == DateTime))
 		return pre ~ InputGenerator.textfield(uiName, "datetime-local",
-				value.toISOExtString[0 .. 16], raw, success);
+				value.toISOExtString[0 .. 16], raw, success, classes);
 	else static if (is(T == Date))
-		return pre ~ InputGenerator.textfield(uiName, "date", value.toISOExtString, raw, success);
+		return pre ~ InputGenerator.textfield(uiName, "date", value.toISOExtString,
+				raw, success, classes);
 	else static if (is(T == TimeOfDay))
 		return pre ~ InputGenerator.textfield(uiName, "time",
-				value.toISOExtString[0 .. 5], raw, success);
+				value.toISOExtString[0 .. 5], raw, success, classes);
 	else static if (is(T == URL))
-		return pre ~ InputGenerator.textfield(uiName, "url", value.toString, raw, success);
+		return pre ~ InputGenerator.textfield(uiName, "url", value.toString, raw, success, classes);
 	else static if (isNumeric!T)
 	{
 		double min, max;
@@ -377,7 +385,7 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		static if (steps.length)
 			raw ~= " step=\"" ~ steps[0].step.to!string ~ "\"";
 		return pre ~ InputGenerator.textfield(uiName, isRange ? "range" : "number",
-				value.to!string, raw, success);
+				value.to!string, raw, success, classes);
 	}
 	else
 		static assert(false, "No setting generator for type " ~ T.stringof);
@@ -912,36 +920,46 @@ struct DefaultInputGenerator
 	}
 
 	/// Called for single line input types
-	static string textfield(string name, string type, string value, string raw, bool success)
+	static string textfield(string name, string type, string value, string raw,
+			bool success, string[] classes)
 	{
-		const className = success ? "" : ` class="error"`;
+		if (!success)
+			classes ~= "error";
+		const className = classes.length ? ` class="` ~ classes.join(" ") ~ `"` : "";
 		return `<label` ~ className ~ `><span>%s</span><input type="%s" value="%s"%s/></label>`.format(name.encode,
 				type.encode, value.encode, raw) ~ errorString(success);
 	}
 
 	/// Called for textareas
-	static string textarea(string name, string value, string raw, bool success)
+	static string textarea(string name, string value, string raw, bool success, string[] classes)
 	{
-		const className = success ? "" : ` class="error"`;
+		if (!success)
+			classes ~= "error";
+		const className = classes.length ? ` class="` ~ classes.join(" ") ~ `"` : "";
 		return `<label` ~ className ~ `><span>%s</span><textarea%s>%s</textarea></label>`.format(name.encode,
 				raw, value.encode) ~ errorString(success);
 	}
 
 	/// Called for boolean values
-	static string checkbox(string name, bool checked, string raw, bool success)
+	static string checkbox(string name, bool checked, string raw, bool success, string[] classes)
 	{
-		const className = success ? "" : " error";
-		return `<label class="checkbox` ~ className ~ `"><input type="checkbox" %s%s/><span>%s</span></label>`.format(
-				checked ? "checked" : "", raw, name.encode) ~ errorString(success);
+		classes ~= "checkbox";
+		if (!success)
+			classes ~= "error";
+		const className = ` class="` ~ classes.join(" ") ~ `"`;
+		return `<label` ~ className ~ `><input type="checkbox" %s%s/><span>%s</span></label>`.format(checked
+				? "checked" : "", raw, name.encode) ~ errorString(success);
 	}
 
 	/// Called for enums disabled as select (you need to iterate over the enum members)
 	static string dropdownList(Enum, translations...)(string name, Enum value,
-			string raw, bool success)
+			string raw, bool success, string[] classes)
 	{
-		const className = success ? "" : " error";
-		string ret = `<label class="select` ~ className ~ `"><span>` ~ name.encode
-			~ `</span><select` ~ raw ~ `>`;
+		classes ~= "select";
+		if (!success)
+			classes ~= "error";
+		const className = ` class="` ~ classes.join(" ") ~ `"`;
+		string ret = `<label` ~ className ~ `><span>` ~ name.encode ~ `</span><select` ~ raw ~ `>`;
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= `<option value="` ~ (cast(OriginalType!Enum) __traits(getMember,
 					Enum, member)).to!string.encode ~ `"` ~ (value == __traits(getMember,
@@ -951,29 +969,37 @@ struct DefaultInputGenerator
 	}
 
 	/// Called for enums displayed as list of radio boxes (you need to iterate over the enum members)
-	static string optionList(Enum, translations...)(string name, Enum value, string raw, bool success)
+	static string optionList(Enum, translations...)(string name, Enum value,
+			string raw, bool success, string[] classes)
 	{
-		const className = success ? "" : " error";
-		string ret = `<label class="checkbox options` ~ className ~ `"><span>` ~ name.encode ~ "</span>";
+		classes ~= "checkbox options";
+		if (!success)
+			classes ~= "error";
+		const className = ` class="` ~ classes.join(" ") ~ `"`;
+		string ret = `<label` ~ className ~ `><span>` ~ name.encode ~ "</span>";
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= checkbox(__traits(getMember, Enum, member).translateEnum!(Enum,
 					translations)(member.makeHumanName), value == __traits(getMember, Enum, member),
 					raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember, Enum,
-						member)).to!string.encode ~ `"`, true).replace(`type="checkbox"`, `type="radio"`);
+						member)).to!string.encode ~ `"`, true, classes).replace(`type="checkbox"`,
+					`type="radio"`);
 		return ret ~ `</label>` ~ errorString(success);
 	}
 
 	/// Called for BitFlags displayed as list of checkboxes.
 	static string checkboxList(Enum, translations...)(string name,
-			BitFlags!Enum value, string raw, bool success)
+			BitFlags!Enum value, string raw, bool success, string[] classes)
 	{
-		const className = success ? "" : " error";
-		string ret = `<label class="checkbox flags` ~ className ~ `"><span>` ~ name.encode ~ "</span>";
+		classes ~= "checkbox flags";
+		if (!success)
+			classes ~= "error";
+		const className = ` class="` ~ classes.join(" ") ~ `"`;
+		string ret = `<label` ~ className ~ `><span>` ~ name.encode ~ "</span>";
 		foreach (member; __traits(allMembers, Enum))
 			ret ~= checkbox(__traits(getMember, Enum, member).translateEnum!(Enum,
 					translations)(member.makeHumanName), !!(value & __traits(getMember, Enum,
 					member)), raw ~ ` value="` ~ (cast(OriginalType!Enum) __traits(getMember,
-					Enum, member)).to!string.encode ~ `"`, true);
+					Enum, member)).to!string.encode ~ `"`, true, classes);
 		return ret ~ `</label>` ~ errorString(success);
 	}
 }
