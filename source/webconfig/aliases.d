@@ -43,3 +43,5 @@ alias rows = settingRows;
 alias html = settingHTML;
 ///
 alias className = settingClass;
+///
+alias placeholder = settingPlaceholder;

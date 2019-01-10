@@ -527,7 +527,7 @@
 {
 	@requiredSetting <span class="comment">// Must be filled out
 </span>	@nonAutomaticSetting <span class="comment">// Don't auto sync when typing
-</span>	@emailSetting string userEmail;
+</span>	@emailSetting @settingPlaceholder(<span class="string_literal">"you@example.com"</span>) string userEmail;
 	<span class="keyword">bool</span> married;
 	@urlSetting @settingLength(64) string resourceURI;
 	<span class="comment">// OR
@@ -2811,6 +2811,66 @@ html is last so you can embed it using %4$s without throwing an orphan arguments
 </div>
 
 </section>
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingPlaceholder" id="settingPlaceholder"><code class="code">settingPlaceholder</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingPlaceholder"></span>struct <code class="code">settingPlaceholder</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Sets the placeholder attribute for elements that support it
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingPlaceholder.placeholder" id="settingPlaceholder.placeholder"><code class="code">placeholder</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingPlaceholder.placeholder"></span>string <code class="code">placeholder</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
 
 </div>
 

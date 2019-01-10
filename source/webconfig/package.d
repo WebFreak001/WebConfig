@@ -67,7 +67,7 @@ unittest
 	{
 		@requiredSetting // Must be filled out
 		@nonAutomaticSetting // Don't auto sync when typing
-		@emailSetting string userEmail;
+		@emailSetting @settingPlaceholder("you@example.com") string userEmail;
 		bool married;
 		@urlSetting @settingLength(64) string resourceURI;
 		// OR
@@ -268,6 +268,7 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	enum enumTranslations = getUDAs!(Member[0], enumTranslation);
 	enum html = getUDAs!(Member[0], settingHTML);
 	enum classNames = getUDAs!(Member[0], settingClass);
+	enum placeholder = getUDAs!(Member[0], settingPlaceholder);
 	static if (labels.length)
 		string uiName = labels[0].label;
 	else
@@ -316,6 +317,8 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 		raw ~= " rows=\"" ~ rows[0].count.to!string ~ "\"";
 	static if (isRequired)
 		raw ~= " required";
+	static if (placeholder.length)
+		raw ~= " placeholder=\"" ~ placeholder[0].placeholder.encode ~ "\"";
 
 	static if (html.length > 0)
 		enum string pre = [html].map!"a.raw".join("\n");
@@ -1138,6 +1141,13 @@ struct formTemplate
 	/// Arguments in order are: string action, string method, string formArguments, string html $(BR)
 	/// html is last so you can embed it using %4$s without throwing an orphan arguments exception.
 	string code;
+}
+
+/// Sets the placeholder attribute for elements that support it
+struct settingPlaceholder
+{
+	///
+	string placeholder;
 }
 
 string translateEnum(T, translations...)(T value, string fallback) @safe
