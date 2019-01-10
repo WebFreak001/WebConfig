@@ -90,7 +90,7 @@ unittest
 		// inserts some html before some element
 		@settingHTML("<hr/><p>Some cooler information now follows.</p>")
 
-		@colorSetting string favoriteColor;
+		@colorSetting @settingClass("wide") string favoriteColor;
 		@disabledSetting string someInformation = "Just a hint, nothing changable";
 		Country favoriteCountry;
 		@settingTranslation("de", "Lieblingsessen")  // Translation of labels (only in translation contexts inside web interfaces)
@@ -267,6 +267,7 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 	enum translations = getUDAs!(Member[0], settingTranslation);
 	enum enumTranslations = getUDAs!(Member[0], enumTranslation);
 	enum html = getUDAs!(Member[0], settingHTML);
+	enum classNames = getUDAs!(Member[0], settingClass);
 	static if (labels.length)
 		string uiName = labels[0].label;
 	else
@@ -280,6 +281,8 @@ string renderSetting(InputGenerator = DefaultInputGenerator, string name, Config
 					uiName = translation.label;
 	}
 	string raw = ` name="` ~ name ~ `"`;
+	static if (classNames.length)
+		raw ~= " class=\"" ~ [classNames].map!"a.className".join(" ") ~ "\"";
 	static if (isDisabled)
 		raw ~= " disabled";
 	else static if (!isNoJS)
@@ -1093,6 +1096,13 @@ struct settingHTML
 {
 	///
 	string raw;
+}
+
+/// Inserts raw CSS class name for an element.
+struct settingClass
+{
+	///
+	string className;
 }
 
 /// Changes how the form HTML template looks

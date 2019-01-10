@@ -41,3 +41,5 @@ alias label = settingLabel;
 alias rows = settingRows;
 ///
 alias html = settingHTML;
+///
+alias className = settingClass;

@@ -550,7 +550,7 @@
 	<span class="comment">// inserts some html before some element
 </span>	@settingHTML(<span class="string_literal">"&lt;hr/&gt;&lt;p&gt;Some cooler information now follows.&lt;/p&gt;"</span>)
 
-	@colorSetting string favoriteColor;
+	@colorSetting @settingClass(<span class="string_literal">"wide"</span>) string favoriteColor;
 	@disabledSetting string someInformation = <span class="string_literal">"Just a hint, nothing changable"</span>;
 	Country favoriteCountry;
 	@settingTranslation(<span class="string_literal">"de"</span>, <span class="string_literal">"Lieblingsessen"</span>)  <span class="comment">// Translation of labels (only in translation contexts inside web interfaces)
@@ -2673,6 +2673,66 @@ You need at least vibe-d v0.8.1-alpha.3 to use this UDA.
         <p class="para">
           <code class="code">
             <span class="ddoc_anchor" id="settingHTML.raw"></span>string <code class="code">raw</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingClass" id="settingClass"><code class="code">settingClass</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingClass"></span>struct <code class="code">settingClass</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Inserts raw CSS class name for an element.
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#settingClass.className" id="settingClass.className"><code class="code">className</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="settingClass.className"></span>string <code class="code">className</code>;
 
           </code>
         </p>
